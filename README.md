@@ -1,18 +1,17 @@
 # Call Translator (React + Express)
 
-A beginner-friendly full-stack web app that listens to speech, translates it, and speaks the translated result.
+A beginner-friendly full-stack web app that captures speech, translates text, and speaks the translated output.
 
 ## Features
 
 - Speech-to-Text using browser Web Speech API (no external speech API)
-- Translation using backend API with LibreTranslate-compatible service
-- Automatic fallback to Google translation endpoint if LibreTranslate is unavailable
+- Translation through backend REST API
+- LibreTranslate first, with automatic Google fallback when unavailable
 - Text-to-Speech using browser SpeechSynthesis API
-- Language direction toggle:
-  - Tamil to English
-  - English to Tamil
-- Start/Stop microphone controls
-- Error handling in frontend and backend
+- Tamil and English translation direction toggle
+- Start and Stop microphone controls
+- Manual text input, retry request, and recent translation history
+- Frontend and backend error handling
 
 ## Folder Structure
 
@@ -38,48 +37,64 @@ Call-T/
 
 - Node.js 18 or newer
 - npm
-- Google Chrome (recommended for Web Speech API)
+- Google Chrome (recommended for SpeechRecognition support)
 
-## Setup Instructions (Windows)
+## Setup (Windows)
 
-### 1. Open terminal in project root
+### 1. Go to project root
 
 ~~~powershell
 cd C:\Users\venkat\Desktop\Call-T
 ~~~
 
-### 2. Setup backend
+### 2. Install dependencies
 
 ~~~powershell
-cd backend
-npm install
-Copy-Item .env.example .env
-npm run dev
+npm --prefix .\backend install
+npm --prefix .\frontend install
 ~~~
 
-Backend runs on: http://localhost:5000
-
-### 3. Setup frontend (open a second terminal)
+### 3. Create environment files
 
 ~~~powershell
-cd C:\Users\venkat\Desktop\Call-T\frontend
-npm install
-Copy-Item .env.example .env
-npm run dev
+Copy-Item .\backend\.env.example .\backend\.env
+Copy-Item .\frontend\.env.example .\frontend\.env
 ~~~
 
-Frontend runs on: http://localhost:5173
+### 4. Start backend
+
+~~~powershell
+npm --prefix .\backend run dev
+~~~
+
+Backend runs on http://localhost:5000.
+
+### 5. Start frontend in a second terminal
+
+~~~powershell
+npm --prefix .\frontend run dev
+~~~
+
+Frontend usually runs on http://localhost:5173. If port 5173 is busy, Vite may use http://localhost:5174.
 
 ## How It Works
 
-1. Click Start Microphone.
-2. Speak in the selected source language.
-3. Browser converts speech to text.
-4. Frontend sends text to backend POST /translate.
-5. Backend calls translation API and returns translated text.
-6. Frontend displays and speaks translated text.
+1. User speaks into microphone or types text manually.
+2. Browser converts speech to text using Web Speech API.
+3. Frontend sends text, source language, and target language to backend.
+4. Backend translates using LibreTranslate, then Google fallback if needed.
+5. Frontend displays translated text.
+6. Browser plays translated speech with SpeechSynthesis API.
 
 ## API
+
+### GET /
+
+Returns backend status message.
+
+### GET /health
+
+Returns health status.
 
 ### POST /translate
 
@@ -87,121 +102,50 @@ Request body:
 
 ~~~json
 {
-  "text": "vanakkam",
-  "sourceLang": "ta",
-  "targetLang": "en"
+  "text": "who are you?",
+  "sourceLang": "en",
+  "targetLang": "ta"
 }
 ~~~
 
-Response:
+Success response:
 
 ~~~json
 {
-  "translatedText": "hello"
+  "translatedText": "நீங்கள் யார்?",
+  "provider": "google"
 }
 ~~~
 
-## Notes
+Error response:
 
-- If translation endpoint rate-limits, change LIBRETRANSLATE_URL in backend/.env.
-- Backend first tries LibreTranslate and then automatically falls back to Google if needed.
-- If microphone does not start, allow microphone permission in browser.
-- For best speech recognition support, use Chrome.
-=======
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+~~~json
+{
+  "error": "Translation failed on all providers",
+  "details": ["..."]
+}
+~~~
 
-# Getting Started
+## Environment Variables
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Backend values in backend/.env:
 
-## Step 1: Start Metro
+- PORT (default 5000)
+- FRONTEND_ORIGIN (single allowed origin)
+- FRONTEND_ORIGINS (comma-separated additional allowed origins)
+- LIBRETRANSLATE_URL
+- LIBRETRANSLATE_API_KEY (optional)
+- GOOGLE_TRANSLATE_URL
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Frontend values in frontend/.env:
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- VITE_API_BASE_URL (default http://localhost:5000)
 
-```sh
-# Using npm
-npm start
+## Troubleshooting
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- CORS error from localhost:5174:
+  - Ensure backend is restarted after env or server CORS changes.
+- Microphone error audio-capture:
+  - Check Chrome site permission and Windows Input device.
+- Port already in use:
+  - Close old node or vite terminals and restart.
